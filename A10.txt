@@ -1,0 +1,118 @@
+vThunder01-Standby-vMaster[1/1](config:2-slb vserver-vport)(NOLICENSE)#show running-config
+!Current configuration: 1025 bytes
+!Configuration last updated at 18:03:20 -03 Thu Jul 28 2022
+!Configuration last saved at 18:03:34 -03 Thu Jul 28 2022
+!64-bit Advanced Core OS (ACOS) version 5.2.0-p1, build 38 (Oct-03-2020,14:41)
+!
+vrrp-a common
+  device-id 1
+  set-id 1
+  enable
+!
+device-context 1
+  vcs enable
+!
+device-context 2
+  vcs enable
+!
+vcs floating-ip 10.32.5.10 255.255.255.240
+!
+vcs device 1
+  interfaces management
+  enable
+!
+vcs device 2
+  interfaces management
+  enable
+!
+terminal idle-timeout 60
+!
+ip dns primary 172.19.100.100
+!
+ip dns secondary 172.19.100.200
+!
+partition partition-1 id 1
+!
+partition partition-2 id 2
+!
+device-context 1
+  hostname vThunder01
+!
+device-context 2
+  hostname vThunder02
+!
+device-context 1
+  timezone America/Brasilia
+!
+device-context 2
+  timezone America/Brasilia
+!
+ntp server timeserver.curitiba.pr.gov.br
+!
+device-context 1
+  interface management
+    ip address 10.32.5.1 255.255.255.240
+!
+device-context 2
+  interface management
+    ip address 10.32.5.2 255.255.255.240
+!
+interface ethernet 1/1
+  enable
+  ip address 192.168.1.100 255.255.255.0
+!
+interface ethernet 2/1
+  enable
+  ip address 192.168.1.200 255.255.255.0
+!
+vrrp-a vrid 0
+  floating-ip 192.168.1.10
+  device-context 1
+    blade-parameters
+      priority 180
+  device-context 2
+    blade-parameters
+      priority 200
+!
+ip nat pool SNAT_PythonWebServer 192.168.1.50 192.168.1.50 netmask /24
+!
+device-context 1
+  ip route 0.0.0.0 /0 192.168.1.1
+!
+device-context 2
+  ip route 0.0.0.0 /0 192.168.1.1
+!
+health monitor backend01
+  retry 4
+  interval 10
+  method http port 8080 expect response-code 200 host 192.168.1.20 url GET /
+!
+health monitor backend02
+  retry 4
+  interval 10
+  method http port 8080 expect response-code 200 host 192.168.1.27 url GET /
+!
+slb server backend01 192.168.1.20
+  health-check backend01
+  port 8080 tcp
+!
+slb server backend02 192.168.1.27
+  health-check backend02
+  port 8080 tcp
+!
+slb service-group sg-PythonWebServer tcp
+  member backend01 8080
+  member backend02 8080
+!
+slb virtual-server VIP-TCP 192.168.1.50
+  port 80 tcp
+    source-nat pool SNAT_PythonWebServer
+    service-group sg-PythonWebServer
+!
+sflow setting local-collection
+!
+sflow collector ip 127.0.0.1 6343
+!
+!
+end
+!Current config commit point for partition 0 is 0 & config mode is classical-mode
